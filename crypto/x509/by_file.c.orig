@@ -164,12 +164,8 @@ int X509_load_cert_file(X509_LOOKUP *ctx, const char *file, int type)
 					}
 				}
 			i=X509_STORE_add_cert(ctx->store_ctx,x);
-			/* ignore any problems with current certificate 
-			    and continue with the next one */
-			if (i)
-			    count++;
-			else
-			    ERR_clear_error();
+			if (!i) goto err;
+			count++;
 			X509_free(x);
 			x=NULL;
 			}
@@ -184,8 +180,7 @@ int X509_load_cert_file(X509_LOOKUP *ctx, const char *file, int type)
 			goto err;
 			}
 		i=X509_STORE_add_cert(ctx->store_ctx,x);
-		if (!i)
-		  ERR_clear_error();
+		if (!i) goto err;
 		ret=i;
 		}
 	else
