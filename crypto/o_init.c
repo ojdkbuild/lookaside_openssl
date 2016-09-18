@@ -107,7 +107,7 @@ static void init_fips_mode(void)
  * Currently only sets FIPS callbacks
  */
 
-void __attribute__ ((constructor)) OPENSSL_init_library(void)
+void OPENSSL_init_library(void)
 	{
 	static int done = 0;
 	if (done)
