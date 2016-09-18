@@ -372,7 +372,7 @@ static int ssleay_rand_bytes(unsigned char *buf, int num, int pseudo)
 	/* always poll for external entropy in FIPS mode, drbg provides the 
 	 * expansion
 	 */
-	if (!initialized || FIPS_module_mode()) 
+	if (!initialized) 
 		{
 		RAND_poll();
 		initialized = 1;
