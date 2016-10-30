@@ -152,7 +152,7 @@ OPENSSL_GLOBAL const SSL_CIPHER ssl2_ciphers[]={
 	SSL_SSLV2,
 	SSL_NOT_EXP|SSL_MEDIUM,
 	0,
-	128,
+	112,
 	128,
 	},
 
@@ -186,7 +186,7 @@ OPENSSL_GLOBAL const SSL_CIPHER ssl2_ciphers[]={
 	SSL_SSLV2,
 	SSL_NOT_EXP|SSL_MEDIUM,
 	0,
-	128,
+	112,
 	128,
 	},
 
@@ -221,7 +221,7 @@ OPENSSL_GLOBAL const SSL_CIPHER ssl2_ciphers[]={
 	SSL_SSLV2,
 	SSL_NOT_EXP|SSL_MEDIUM,
 	0,
-	128,
+	112,
 	128,
 	},
 #endif
