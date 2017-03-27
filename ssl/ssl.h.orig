@@ -331,7 +331,7 @@ extern "C" {
 /* The following cipher list is used by default.
  * It also is substituted when an application-defined cipher list string
  * starts with 'DEFAULT'. */
-#define SSL_DEFAULT_CIPHER_LIST	"ALL:!aNULL:!eNULL:!SSLv2"
+#define SSL_DEFAULT_CIPHER_LIST	"ALL:!aNULL:!eNULL:!SSLv2:!EXPORT:!RC2:!DES"
 /* As of OpenSSL 1.0.0, ssl_create_cipher_list() in ssl/ssl_ciph.c always
  * starts with a reasonable order, and all we have to do for DEFAULT is
  * throwing out anonymous and unencrypted ciphersuites!
@@ -549,7 +549,7 @@ struct ssl_session_st
 #define SSL_OP_NETSCAPE_CHALLENGE_BUG			0x00000002L
 /* Allow initial connection to servers that don't support RI */
 #define SSL_OP_LEGACY_SERVER_CONNECT			0x00000004L
-#define SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG		0x00000008L
+#define SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG		0x00000008L /* no effect since 1.0.0c due to CVE-2010-4180 */
 #define SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG		0x00000010L
 #define SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER		0x00000020L
 #define SSL_OP_MSIE_SSLV2_RSA_PADDING			0x00000040L /* no effect since 0.9.7h and 0.9.8b */
@@ -566,7 +566,7 @@ struct ssl_session_st
 
 /* SSL_OP_ALL: various bug workarounds that should be rather harmless.
  *             This used to be 0x000FFFFFL before 0.9.7. */
-#define SSL_OP_ALL					0x80000BFFL
+#define SSL_OP_ALL					0x80000BF7L /* we still have to include SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS */
 
 /* DTLS options */
 #define SSL_OP_NO_QUERY_MTU                 0x00001000L
@@ -587,9 +587,8 @@ struct ssl_session_st
 #define SSL_OP_SINGLE_ECDH_USE				0x00080000L
 /* If set, always create a new key when using tmp_dh parameters */
 #define SSL_OP_SINGLE_DH_USE				0x00100000L
-/* Set to always use the tmp_rsa key when doing RSA operations,
- * even when this violates protocol specs */
-#define SSL_OP_EPHEMERAL_RSA				0x00200000L
+/* Does nothing: retained for compatibiity */
+#define SSL_OP_EPHEMERAL_RSA				0x0
 /* Set on servers to choose the cipher according to the server's
  * preferences */
 #define SSL_OP_CIPHER_SERVER_PREFERENCE			0x00400000L
@@ -638,6 +637,10 @@ struct ssl_session_st
  * TLS only.)  "Released" buffers are put onto a free-list in the context
  * or just freed (depending on the context's setting for freelist_max_len). */
 #define SSL_MODE_RELEASE_BUFFERS 0x00000010L
+/* Send TLS_FALLBACK_SCSV in the ClientHello.
+ * To be set by applications that reconnect with a downgraded protocol
+ * version; see draft-ietf-tls-downgrade-scsv-00 for details. */
+#define SSL_MODE_SEND_FALLBACK_SCSV 0x00000080L
 
 /* Note: SSL[_CTX]_set_{options,mode} use |= op on the previous value,
  * they cannot be used to clear bits. */
@@ -1453,6 +1456,7 @@ DECLARE_PEM_rw(SSL_SESSION, SSL_SESSION)
 #define SSL_AD_BAD_CERTIFICATE_STATUS_RESPONSE TLS1_AD_BAD_CERTIFICATE_STATUS_RESPONSE
 #define SSL_AD_BAD_CERTIFICATE_HASH_VALUE TLS1_AD_BAD_CERTIFICATE_HASH_VALUE
 #define SSL_AD_UNKNOWN_PSK_IDENTITY     TLS1_AD_UNKNOWN_PSK_IDENTITY /* fatal */
+#define SSL_AD_INAPPROPRIATE_FALLBACK	TLS1_AD_INAPPROPRIATE_FALLBACK /* fatal */
 
 #define SSL_ERROR_NONE			0
 #define SSL_ERROR_SSL			1
@@ -1563,6 +1567,11 @@ DECLARE_PEM_rw(SSL_SESSION, SSL_SESSION)
 #define SSL_CTRL_GET_EXTRA_CHAIN_CERTS		82
 #define SSL_CTRL_CLEAR_EXTRA_CHAIN_CERTS	83
 
+#define SSL_CTRL_SET_ECDH_AUTO			94
+#define SSL_CTRL_GET_SERVER_TMP_KEY		109
+
+#define SSL_CTRL_CHECK_PROTO_VERSION		119
+
 #define DTLSv1_get_timeout(ssl, arg) \
 	SSL_ctrl(ssl,DTLS_CTRL_GET_TIMEOUT,0, (void *)arg)
 #define DTLSv1_handle_timeout(ssl) \
@@ -1603,6 +1612,14 @@ DECLARE_PEM_rw(SSL_SESSION, SSL_SESSION)
 	SSL_CTX_ctrl(ctx,SSL_CTRL_GET_EXTRA_CHAIN_CERTS,0,px509)
 #define SSL_CTX_clear_extra_chain_certs(ctx) \
 	SSL_CTX_ctrl(ctx,SSL_CTRL_CLEAR_EXTRA_CHAIN_CERTS,0,NULL)
+
+#define SSL_CTX_set_ecdh_auto(ctx, onoff) \
+	SSL_CTX_ctrl(ctx,SSL_CTRL_SET_ECDH_AUTO,onoff,NULL)
+#define SSL_set_ecdh_auto(s, onoff) \
+	SSL_ctrl(s,SSL_CTRL_SET_ECDH_AUTO,onoff,NULL)
+
+#define SSL_get_server_tmp_key(s, pk) \
+	SSL_ctrl(s,SSL_CTRL_GET_SERVER_TMP_KEY,0,pk)
 
 #ifndef OPENSSL_NO_BIO
 BIO_METHOD *BIO_f_ssl(void);
@@ -2006,6 +2023,7 @@ void ERR_load_SSL_strings(void);
 #define SSL_F_DTLS1_HEARTBEAT				 305
 #define SSL_F_DTLS1_OUTPUT_CERT_CHAIN			 255
 #define SSL_F_DTLS1_PREPROCESS_FRAGMENT			 288
+#define SSL_F_DTLS1_PROCESS_BUFFERED_RECORDS		 424
 #define SSL_F_DTLS1_PROCESS_OUT_OF_SEQ_MESSAGE		 256
 #define SSL_F_DTLS1_PROCESS_RECORD			 257
 #define SSL_F_DTLS1_READ_BYTES				 258
@@ -2159,6 +2177,7 @@ void ERR_load_SSL_strings(void);
 #define SSL_F_SSL_READ					 223
 #define SSL_F_SSL_RSA_PRIVATE_DECRYPT			 187
 #define SSL_F_SSL_RSA_PUBLIC_ENCRYPT			 188
+#define SSL_F_SSL_SESSION_DUP				 348
 #define SSL_F_SSL_SESSION_NEW				 189
 #define SSL_F_SSL_SESSION_PRINT_FP			 190
 #define SSL_F_SSL_SESSION_SET1_ID_CONTEXT		 312
@@ -2272,6 +2291,7 @@ void ERR_load_SSL_strings(void);
 #define SSL_R_DATA_LENGTH_TOO_LONG			 146
 #define SSL_R_DECRYPTION_FAILED				 147
 #define SSL_R_DECRYPTION_FAILED_OR_BAD_RECORD_MAC	 281
+#define SSL_R_DH_KEY_TOO_SMALL                           372
 #define SSL_R_DH_PUBLIC_VALUE_LENGTH_IS_WRONG		 148
 #define SSL_R_DIGEST_CHECK_FAILED			 149
 #define SSL_R_DTLS_MESSAGE_TOO_BIG			 334
@@ -2293,6 +2313,7 @@ void ERR_load_SSL_strings(void);
 #define SSL_R_HTTPS_PROXY_REQUEST			 155
 #define SSL_R_HTTP_REQUEST				 156
 #define SSL_R_ILLEGAL_PADDING				 283
+#define SSL_R_INAPPROPRIATE_FALLBACK			 373
 #define SSL_R_INCONSISTENT_COMPRESSION			 340
 #define SSL_R_INVALID_CHALLENGE_LENGTH			 158
 #define SSL_R_INVALID_COMMAND				 280
@@ -2439,6 +2460,7 @@ void ERR_load_SSL_strings(void);
 #define SSL_R_TLSV1_ALERT_DECRYPTION_FAILED		 1021
 #define SSL_R_TLSV1_ALERT_DECRYPT_ERROR			 1051
 #define SSL_R_TLSV1_ALERT_EXPORT_RESTRICTION		 1060
+#define SSL_R_TLSV1_ALERT_INAPPROPRIATE_FALLBACK	 1086
 #define SSL_R_TLSV1_ALERT_INSUFFICIENT_SECURITY		 1071
 #define SSL_R_TLSV1_ALERT_INTERNAL_ERROR		 1080
 #define SSL_R_TLSV1_ALERT_NO_RENEGOTIATION		 1100
