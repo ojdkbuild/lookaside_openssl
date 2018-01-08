@@ -10,7 +10,6 @@ SHLIB_VERSION_HISTORY=
 SHLIB_MAJOR=
 SHLIB_MINOR=
 SHLIB_EXT=
-SHLIB_SONAMEVER=10
 PLATFORM=dist
 OPTIONS=
 CONFIGURE_ARGS=
@@ -344,9 +343,10 @@ clean-shared:
 link-shared:
 	@ set -e; for i in $(SHLIBDIRS); do \
 		$(MAKE) -f $(HERE)/Makefile.shared -e $(BUILDENV) \
-			LIBNAME=$$i LIBVERSION=$(SHLIB_SONAMEVER) \
+			LIBNAME=$$i LIBVERSION=$(SHLIB_MAJOR).$(SHLIB_MINOR) \
 			LIBCOMPATVERSIONS=";$(SHLIB_VERSION_HISTORY)" \
 			symlink.$(SHLIB_TARGET); \
+		libs="$$libs -l$$i"; \
 	done
 
 build-shared: do_$(SHLIB_TARGET) link-shared
@@ -357,7 +357,7 @@ do_$(SHLIB_TARGET):
 			libs="$(LIBKRB5) $$libs"; \
 		fi; \
 		$(CLEARENV) && $(MAKE) -f Makefile.shared -e $(BUILDENV) \
-			LIBNAME=$$i LIBVERSION=$(SHLIB_SONAMEVER) \
+			LIBNAME=$$i LIBVERSION=$(SHLIB_MAJOR).$(SHLIB_MINOR) \
 			LIBCOMPATVERSIONS=";$(SHLIB_VERSION_HISTORY)" \
 			LIBDEPS="$$libs $(EX_LIBS)" \
 			link_a.$(SHLIB_TARGET); \
