@@ -95,7 +95,6 @@ int MAIN(int argc, char **argv)
     int ret = 1;
     int i, num = DEFBITS;
     long l;
-    int use_x931 = 0;
     const EVP_CIPHER *enc = NULL;
     unsigned long f4 = RSA_F4;
     char *outfile = NULL;
@@ -136,8 +135,6 @@ int MAIN(int argc, char **argv)
             f4 = 3;
         else if (strcmp(*argv, "-F4") == 0 || strcmp(*argv, "-f4") == 0)
             f4 = RSA_F4;
-        else if (strcmp(*argv, "-x931") == 0)
-            use_x931 = 1;
 # ifndef OPENSSL_NO_ENGINE
         else if (strcmp(*argv, "-engine") == 0) {
             if (--argc < 1)
@@ -275,12 +272,7 @@ int MAIN(int argc, char **argv)
     if (!rsa)
         goto err;
 
-    if (use_x931) {
-        if (!BN_set_word(bn, f4))
-            goto err;
-        if (!RSA_X931_generate_key_ex(rsa, num, bn, &cb))
-            goto err;
-    } else if (!BN_set_word(bn, f4)
+    if (!BN_set_word(bn, f4)
                || !RSA_generate_key_ex(rsa, num, bn, &cb))
         goto err;
 

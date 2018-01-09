@@ -64,6 +64,10 @@
 #include <errno.h>
 #include <signal.h>
 
+#ifdef _MSC_VER
+#include <winsock2.h>
+#endif
+
 #ifdef FLAT_INC
 # include "e_os2.h"
 #else
@@ -246,8 +250,10 @@ int init_client(int *sock, char *host, char *port, int type)
     e = getaddrinfo(host, port, &hints, &res);
     if (e) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(e));
+#ifndef _MSC_VER
         if (e == EAI_SYSTEM)
             perror("getaddrinfo");
+#endif
         return (0);
     }
 
@@ -347,8 +353,10 @@ static int init_server(int *sock, char *port, int type)
     if (e) {
         if (hints.ai_family == AF_INET) {
             fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(e));
+#ifndef _MSC_VER
             if (e == EAI_SYSTEM)
                 perror("getaddrinfo");
+#endif
             return (0);
         } else
             res = NULL;

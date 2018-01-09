@@ -1739,9 +1739,9 @@ int MAIN(int argc, char **argv)
             goto end;
         }
         mbuf[seen] = 0;
-        while (!strcasestr
+        while (!strstr
                (mbuf, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'")
-               && !strcasestr(mbuf,
+               && !strstr(mbuf,
                               "<starttls xmlns=\"urn:ietf:params:xml:ns:xmpp-tls\""))
         {
             seen = BIO_read(sbio, mbuf, BUFSIZZ);
