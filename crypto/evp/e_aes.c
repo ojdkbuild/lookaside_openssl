@@ -383,8 +383,10 @@ static int aesni_xts_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 
     if (key) {
         /* key_len is two AES keys */
+# ifdef OPENSSL_FIPS
         if (FIPS_module_mode() && memcmp(key, key + ctx->key_len / 2, ctx->key_len / 2) == 0)
             return 0;
+# endif
         if (enc) {
             aesni_set_encrypt_key(key, ctx->key_len * 4, &xctx->ks1.ks);
             xctx->xts.block1 = (block128_f) aesni_encrypt;
@@ -706,8 +708,10 @@ static int aes_t4_xts_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
     if (key) {
         int bits = ctx->key_len * 4;
 
+# ifdef OPENSSL_FIPS
         if (FIPS_module_mode() && memcmp(key, key + ctx->key_len / 2, ctx->key_len / 2) == 0)
             return 0;
+# endif
         xctx->stream = NULL;
         /* key_len is two AES keys */
         if (enc) {
@@ -1658,8 +1662,10 @@ static int aes_xts_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 
     if (key)
         do {
+# ifdef OPENSSL_FIPS
             if (FIPS_module_mode() && memcmp(key, key + ctx->key_len / 2, ctx->key_len / 2) == 0)
                 return 0;
+# endif
 # ifdef AES_XTS_ASM
             xctx->stream = enc ? AES_xts_encrypt : AES_xts_decrypt;
 # else
