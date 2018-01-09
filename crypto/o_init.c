@@ -106,6 +106,21 @@ static void init_fips_mode(void)
         FIPS_selftest_check();
     }
 }
+#else
+# include <errno.h>
+# include <stdlib.h>
+# include <stdio.h>
+# include <string.h>
+# include <ctype.h>
+# include <openssl/rand.h>
+# include <openssl/dh.h>
+# include <openssl/objects.h>
+
+# define FIPS_MODE_SWITCH_FILE "/proc/sys/crypto/fips_enabled"
+
+# define LEGACY_SETTINGS_FILE "/etc/pki/tls/legacy-settings"
+
+# define NUM_MAX_LEGACY_MDS 8
 #endif
 
 int private_ossl_allowed_legacy_mds[NUM_MAX_LEGACY_MDS + 1]; /* zero terminated */
@@ -160,63 +175,6 @@ static void parse_minimum_dh_bits(char *p)
     }
 }
 
-static void load_legacy_settings(void)
-{
-    FILE *f;
-    char *line = NULL;
-    size_t len = 0;
-
-    if ((f = fopen(LEGACY_SETTINGS_FILE, "r")) == NULL) {
-        return;
-    }
-
-    while (getline(&line, &len, f) > 0) {
-        char *p = line, *e, *val;
-
-        /* skip initial whitespace */
-        while (isspace(p[0])) {
-            ++p;
-        }
-
-        e = p;
-
-        while (e[0] != '\0' && !isspace(e[0])) {
-            ++e;
-        }
-
-        /* terminate name, skip whitespace between name and value */
-        if (e[0] != '\0') {
-            e[0] = '\0';
-            ++e;
-            while (isspace(e[0])) {
-                ++e;
-            }
-        }
-
-        val = e;
-
-        e = e + strlen(val);
-
-        /* trim terminating whitespace */
-        while (e > val) {
-            --e;
-            if (isspace(e[0])) {
-                e[0] = '\0';
-            } else {
-                break;
-            }
-        }
-
-        if (strcasecmp(p, "LegacySigningMDs") == 0) {
-            parse_legacy_mds(val);
-        } else if (strcasecmp(line, "MinimumDHBits") == 0) {
-            parse_minimum_dh_bits(val);
-        }
-        /* simply skip other unrecognized lines */
-    }
-    (void)fclose(f);
-}
-
 /*
  * Perform any essential OpenSSL initialization operations. Currently only
  * sets FIPS callbacks
@@ -228,7 +186,7 @@ void OPENSSL_init_library(void)
     if (done)
         return;
     done = 1;
-    load_legacy_settings();
+    // load_legacy_settings();
 #ifdef OPENSSL_FIPS
     if (!FIPS_module_installed()) {
         return;
