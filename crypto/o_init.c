@@ -222,7 +222,7 @@ static void load_legacy_settings(void)
  * sets FIPS callbacks
  */
 
-void __attribute__ ((constructor)) OPENSSL_init_library(void)
+void OPENSSL_init_library(void)
 {
     static int done = 0;
     if (done)
