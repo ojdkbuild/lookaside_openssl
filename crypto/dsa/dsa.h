@@ -338,7 +338,7 @@ void ERR_load_DSA_strings(void);
 # define DSA_R_DECODE_ERROR                               104
 # define DSA_R_INVALID_DIGEST_TYPE                        106
 # define DSA_R_INVALID_PARAMETERS                         212
-# define DSA_R_KEY_SIZE_INVALID                           113
+# define DSA_R_KEY_SIZE_INVALID                           201
 # define DSA_R_KEY_SIZE_TOO_SMALL                         110
 # define DSA_R_MISSING_PARAMETERS                         101
 # define DSA_R_MODULUS_TOO_LARGE                          103
